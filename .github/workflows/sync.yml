@@ -23,7 +23,9 @@ jobs:
         run: npm install
 
       - name: Execute sync script
-        run: npx tsx scripts/sync_jobs.ts
+        run: |
+          chmod +x node_modules/.bin/* || true
+          npx tsx scripts/sync_jobs.ts
 
       - name: Commit and push changes
         run: |
