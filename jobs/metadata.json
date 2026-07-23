@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-07-23T16:03:53.337Z",
+  "totalJobs": 199,
+  "providerStats": {
+    "freehire": {
+      "providerName": "freehire",
+      "totalFetched": 200,
+      "totalNormalized": 200,
+      "duplicatesRemoved": 1,
+      "expiredRemoved": 0,
+      "incompleteRemoved": 0,
+      "invalidRemoved": 0,
+      "totalValid": 199
+    }
+  },
+  "datasetFilename": "latest.json",
+  "datasetHash": "d89db068cb6578c395f6e78cdca33d8b1a14f2ee83ab24aad703c4d8fa5442a4",
+  "datasetSizeBytes": 1161796,
+  "overallVersion": "ac5560061e7bf5994c99d042e29e8df908e19a242c0ae96c298457d9524d4fbe"
+}
