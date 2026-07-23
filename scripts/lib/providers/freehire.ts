@@ -45,11 +45,13 @@ export class FreeHireProvider implements JobProvider {
   private baseUrl: string;
   private pageSize: number;
   private maxPages: number;
+  private maxJobs: number;
 
-  constructor(options?: { baseUrl?: string; pageSize?: number; maxPages?: number }) {
+  constructor(options?: { baseUrl?: string; pageSize?: number; maxPages?: number; maxJobs?: number }) {
     this.baseUrl = options?.baseUrl || process.env.FREEHIRE_BASE_URL || 'https://freehire.dev/api/v1/jobs';
     this.pageSize = options?.pageSize || parseInt(process.env.FREEHIRE_PAGE_SIZE || '100', 10);
-    this.maxPages = options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || '200', 10);
+    this.maxPages = options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || '5', 10);
+    this.maxJobs = options?.maxJobs || parseInt(process.env.FREEHIRE_MAX_JOBS || '500', 10);
   }
 
   public async *fetchJobs(): AsyncGenerator<FreeHireRawJob[], void, unknown> {
@@ -57,9 +59,9 @@ export class FreeHireProvider implements JobProvider {
     let pagesFetched = 0;
     let hasMore = true;
 
-    logger.info(`Starting FreeHire job fetch (pageSize=${this.pageSize}, maxPages=${this.maxPages})...`);
+    logger.info(`Starting FreeHire job fetch (pageSize=${this.pageSize}, maxJobs=${this.maxJobs}, maxPages=${this.maxPages})...`);
 
-    while (hasMore && pagesFetched < this.maxPages) {
+    while (hasMore && pagesFetched < this.maxPages && offset < this.maxJobs) {
       const url = `${this.baseUrl}?limit=${this.pageSize}&offset=${offset}`;
 
       const response = await withRetry(async () => {

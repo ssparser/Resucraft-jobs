@@ -25,6 +25,8 @@ jobs:
         run: npm install
 
       - name: Execute sync script
+        env:
+          FREEHIRE_MAX_JOBS: "500"
         run: |
           chmod +x node_modules/.bin/* || true
           npx tsx scripts/sync_jobs.ts
