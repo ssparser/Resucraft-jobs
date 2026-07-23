@@ -1,0 +1,13 @@
+{
+  "name": "resucraft-jobs",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sync": "tsx scripts/sync_jobs.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
