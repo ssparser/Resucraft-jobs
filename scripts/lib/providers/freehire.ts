@@ -197,6 +197,23 @@ export class FreeHireProvider implements JobProvider {
       tagsSet.add(job.enrichment.category.toLowerCase());
     }
 
+    let location = job.location ? job.location.trim() : null;
+    if (!location) {
+      const locParts: string[] = [];
+      if (Array.isArray(job.cities) && job.cities.length > 0) {
+        locParts.push(job.cities.join(", "));
+      }
+      if (Array.isArray(job.countries) && job.countries.length > 0) {
+        locParts.push(job.countries.join(", "));
+      }
+      if (Array.isArray(job.regions) && job.regions.length > 0) {
+        locParts.push(job.regions.join(", "));
+      }
+      if (locParts.length > 0) {
+        location = locParts.join(", ");
+      }
+    }
+
     return {
       id,
       source: this.name,
@@ -204,7 +221,7 @@ export class FreeHireProvider implements JobProvider {
       slug: job.public_slug || sourceJobId,
       title: job.title ? job.title.trim() : "",
       company: job.company ? job.company.trim() : "",
-      location: job.location ? job.location.trim() : null,
+      location,
       country,
       remote: isRemote,
       visaSponsored: false,

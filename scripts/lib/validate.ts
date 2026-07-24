@@ -1,4 +1,4 @@
-import { NormalizedJob } from './types.js';
+import { NormalizedJob } from "./types.js";
 
 export interface ValidationFilterResult {
   validJobs: NormalizedJob[];
@@ -10,7 +10,10 @@ export interface ValidationFilterResult {
   nonEnglishRemoved: number;
 }
 
-export function isJobExpired(job: NormalizedJob, now: Date = new Date()): boolean {
+export function isJobExpired(
+  job: NormalizedJob,
+  now: Date = new Date(),
+): boolean {
   if (!job.expiresAt) return false;
   const expiryDate = new Date(job.expiresAt);
   if (isNaN(expiryDate.getTime())) return false;
@@ -22,6 +25,7 @@ export function isJobIncomplete(job: NormalizedJob): boolean {
   if (!job.company || !job.company.trim()) return true;
   if (!job.applyUrl || !job.applyUrl.trim()) return true;
   if (!job.description || !job.description.trim()) return true;
+  if (!job.location || !job.location.trim()) return true;
   return false;
 }
 
@@ -29,7 +33,7 @@ export function isJobInvalid(job: NormalizedJob): boolean {
   // Validate applyUrl URL syntax
   try {
     const url = new URL(job.applyUrl);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
       return true;
     }
   } catch {
@@ -46,14 +50,8 @@ export function isJobInvalid(job: NormalizedJob): boolean {
 }
 
 export function isDjinniJob(job: NormalizedJob): boolean {
-  const fields = [
-    job.applyUrl,
-    job.companyUrl || '',
-    job.sourceJobId,
-    job.slug,
-    job.source,
-  ];
-  return fields.some((field) => field.toLowerCase().includes('djinni'));
+  const fields = [job.applyUrl];
+  return fields.some((field) => field.toLowerCase().includes("djinni"));
 }
 
 const NON_TECH_TITLE_PATTERNS = [
@@ -140,7 +138,7 @@ const TECH_KEYWORDS_PATTERNS = [
 ];
 
 export function isTechJob(job: NormalizedJob): boolean {
-  if (job.tags.includes('non_tech') || job.tags.includes('non-tech')) {
+  if (job.tags.includes("non_tech") || job.tags.includes("non-tech")) {
     return false;
   }
 
@@ -148,11 +146,12 @@ export function isTechJob(job: NormalizedJob): boolean {
     return false;
   }
 
-  if (job.tags.includes('tech')) return true;
+  if (job.tags.includes("tech")) return true;
   return TECH_KEYWORDS_PATTERNS.some((pattern) => pattern.test(job.title));
 }
 
-const NON_ENGLISH_SCRIPT_REGEX = /[\u0400-\u04FF\u4E00-\u9FFF\u0600-\u06FF\u0590-\u05FF\u0E00-\u0E7F\u0900-\u097F\u3040-\u30FF]/;
+const NON_ENGLISH_SCRIPT_REGEX =
+  /[\u0400-\u04FF\u4E00-\u9FFF\u0600-\u06FF\u0590-\u05FF\u0E00-\u0E7F\u0900-\u097F\u3040-\u30FF]/;
 
 const NON_ENGLISH_TITLE_PATTERNS = [
   /\b(développeur|ingénieur|coordinateur|coordinatrice|responsable|stage|alternance|approvisionnement|matières premières)\b/i,
@@ -162,17 +161,79 @@ const NON_ENGLISH_TITLE_PATTERNS = [
 ];
 
 const ENGLISH_STOPWORDS = new Set([
-  'the', 'and', 'to', 'of', 'in', 'is', 'you', 'that', 'it', 'for', 'on', 'are', 'with', 'as', 'at', 'be', 'this', 'have', 'from', 'or', 'by', 'an', 'work', 'team', 'experience', 'will', 'our', 'we', 'about', 'role'
+  "the",
+  "and",
+  "to",
+  "of",
+  "in",
+  "is",
+  "you",
+  "that",
+  "it",
+  "for",
+  "on",
+  "are",
+  "with",
+  "as",
+  "at",
+  "be",
+  "this",
+  "have",
+  "from",
+  "or",
+  "by",
+  "an",
+  "work",
+  "team",
+  "experience",
+  "will",
+  "our",
+  "we",
+  "about",
+  "role",
 ]);
 
 const NON_ENGLISH_STOPWORDS = new Set([
-  'et', 'les', 'pour', 'dans', 'des', 'est', 'une', 'qui', 'sur', 'avec', 'par', 'nous',
-  'und', 'der', 'die', 'das', 'mit', 'für', 'ist', 'von', 'auf', 'aus', 'den',
-  'para', 'con', 'por', 'como', 'del', 'los', 'las', 'una', 'uno', 'más',
+  "et",
+  "les",
+  "pour",
+  "dans",
+  "des",
+  "est",
+  "une",
+  "qui",
+  "sur",
+  "avec",
+  "par",
+  "nous",
+  "und",
+  "der",
+  "die",
+  "das",
+  "mit",
+  "für",
+  "ist",
+  "von",
+  "auf",
+  "aus",
+  "den",
+  "para",
+  "con",
+  "por",
+  "como",
+  "del",
+  "los",
+  "las",
+  "una",
+  "uno",
+  "más",
 ]);
 
 export function isEnglishJob(job: NormalizedJob): boolean {
-  if (NON_ENGLISH_SCRIPT_REGEX.test(job.title) || NON_ENGLISH_SCRIPT_REGEX.test(job.description)) {
+  if (
+    NON_ENGLISH_SCRIPT_REGEX.test(job.title) ||
+    NON_ENGLISH_SCRIPT_REGEX.test(job.description)
+  ) {
     return false;
   }
 
@@ -180,7 +241,7 @@ export function isEnglishJob(job: NormalizedJob): boolean {
     return false;
   }
 
-  const cleanDesc = job.description.replace(/<[^>]*>/g, ' ').toLowerCase();
+  const cleanDesc = job.description.replace(/<[^>]*>/g, " ").toLowerCase();
   const words = cleanDesc.split(/\W+/).filter((w) => w.length > 1);
 
   if (words.length > 20) {
@@ -199,7 +260,9 @@ export function isEnglishJob(job: NormalizedJob): boolean {
   return true;
 }
 
-export function validateAndFilterJobs(jobs: NormalizedJob[]): ValidationFilterResult {
+export function validateAndFilterJobs(
+  jobs: NormalizedJob[],
+): ValidationFilterResult {
   const now = new Date();
   const validJobs: NormalizedJob[] = [];
 
