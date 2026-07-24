@@ -71,9 +71,9 @@ export class FreeHireProvider implements JobProvider {
       options?.pageSize ||
       parseInt(process.env.FREEHIRE_PAGE_SIZE || "100", 10);
     this.maxPages =
-      options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || "5", 10);
+      options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || "15", 10);
     this.maxJobs =
-      options?.maxJobs || parseInt(process.env.FREEHIRE_MAX_JOBS || "500", 10);
+      options?.maxJobs || parseInt(process.env.FREEHIRE_MAX_JOBS || "1500", 10);
   }
 
   private matchesTargetRoles(job: FreeHireRawJob): boolean {

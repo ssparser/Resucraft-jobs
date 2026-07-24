@@ -54,100 +54,11 @@ export function isDjinniJob(job: NormalizedJob): boolean {
   return fields.some((field) => field.toLowerCase().includes("djinni"));
 }
 
-const NON_TECH_TITLE_PATTERNS = [
-  /\bplanning\b/i,
-  /\blogistics\b/i,
-  /\bsupply chain\b/i,
-  /\bapprovisionnement\b/i,
-  /\bmatières premières\b/i,
-  /\bhuman resources\b/i,
-  /\bhr specialist\b/i,
-  /\brecruiter\b/i,
-  /\btalent acquisition\b/i,
-  /\baccountant\b/i,
-  /\baccounting\b/i,
-  /\blegal counsel\b/i,
-  /\bparalegal\b/i,
-  /\breceptionist\b/i,
-  /\badministrative assistant\b/i,
-  /\bwarehouse\b/i,
-  /\bmedical specialist\b/i,
-  /\bnursing\b/i,
-  /\bnurse\b/i,
-  /\bphysician\b/i,
-  /\bcook\b/i,
-  /\bchef\b/i,
-  /\bdriver\b/i,
-  /\bcleaner\b/i,
-  /\bjanitor\b/i,
-  /\bsales associate\b/i,
-  /\bretail\b/i,
-  /\bstore manager\b/i,
-];
-
-const TECH_KEYWORDS_PATTERNS = [
-  /\bsoftware\b/i,
-  /\bdeveloper\b/i,
-  /\bengineer\b/i,
-  /\bprogrammer\b/i,
-  /\bcoder\b/i,
-  /\bfrontend\b/i,
-  /\bfront-end\b/i,
-  /\bbackend\b/i,
-  /\bback-end\b/i,
-  /\bfullstack\b/i,
-  /\bfull-stack\b/i,
-  /\bai\b/i,
-  /\bml\b/i,
-  /\bmachine learning\b/i,
-  /\bdata\b/i,
-  /\bdevops\b/i,
-  /\bsre\b/i,
-  /\bsysadmin\b/i,
-  /\bsystem\b/i,
-  /\bqa\b/i,
-  /\btesting\b/i,
-  /\btest\b/i,
-  /\bsecurity\b/i,
-  /\bcyber\b/i,
-  /\bweb\b/i,
-  /\bmobile\b/i,
-  /\bios\b/i,
-  /\bandroid\b/i,
-  /\bembedded\b/i,
-  /\bfirmware\b/i,
-  /\bplatform\b/i,
-  /\binfrastructure\b/i,
-  /\barchitect\b/i,
-  /\btech\b/i,
-  /\btechnical\b/i,
-  /\bscrum\b/i,
-  /\bagile\b/i,
-  /\bui\/ux\b/i,
-  /\bux\b/i,
-  /\bui\b/i,
-  /\bdatabase\b/i,
-  /\bdba\b/i,
-  /\bcloud\b/i,
-  /\bnetwork\b/i,
-  /\bit\b/i,
-  /\bproduct manager\b/i,
-  /\bsite reliability\b/i,
-  /\banalytics\b/i,
-  /\balgorithm\b/i,
-];
-
 export function isTechJob(job: NormalizedJob): boolean {
   if (job.tags.includes("non_tech") || job.tags.includes("non-tech")) {
     return false;
   }
-
-  if (NON_TECH_TITLE_PATTERNS.some((pattern) => pattern.test(job.title))) {
-    return false;
-  }
-
-  if (job.tags.includes("tech")) return true;
-  return TECH_KEYWORDS_PATTERNS.some((pattern) => pattern.test(job.title));
+  return true;
 }
 
 const NON_ENGLISH_SCRIPT_REGEX =
