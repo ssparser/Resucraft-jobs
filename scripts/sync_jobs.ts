@@ -65,6 +65,9 @@ async function main() {
         expiredRemoved: 0,
         incompleteRemoved: 0,
         invalidRemoved: 0,
+        djinniRemoved: 0,
+        nonTechRemoved: 0,
+        nonEnglishRemoved: 0,
         totalValid: 0,
       };
       return [];

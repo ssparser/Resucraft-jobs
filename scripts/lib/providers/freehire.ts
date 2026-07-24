@@ -88,13 +88,12 @@ export class FreeHireProvider implements JobProvider {
       `Starting FreeHire job fetch (pageSize=${this.pageSize}, maxJobs=${this.maxJobs}, maxPages=${this.maxPages})...`,
     );
 
-    // Calculate split: allocation heavily favors tech jobs (e.g., ~80% tech, ~20% non-tech)
-    const techPagesLimit = Math.max(1, Math.ceil(this.maxPages * 0.8));
-    const nonTechPagesLimit = Math.max(1, this.maxPages - techPagesLimit);
+    // All pages are dedicated to tech jobs (non-tech jobs fetching is disabled)
+    const techPagesLimit = this.maxPages;
 
     let totalPagesFetched = 0;
 
-    // --- Pass 1: Fetch Tech Jobs (isTechUrl) ---
+    // --- Fetch Tech Jobs (isTechUrl) ---
     logger.info(`Fetching Tech jobs (limit pages: ${techPagesLimit})...`);
     let techOffset = 0;
     let techPagesFetched = 0;
@@ -164,78 +163,9 @@ export class FreeHireProvider implements JobProvider {
       }
     }
 
+    // Non-tech jobs fetching is explicitly disabled - only tech jobs in English are processed
     logger.info(
-      `Fetching Non-Tech jobs (limit pages: ${nonTechPagesLimit})...`,
-    );
-    let nonTechOffset = 0;
-    let nonTechPagesFetched = 0;
-    let hasMoreNonTech = true;
-
-    while (
-      hasMoreNonTech &&
-      nonTechPagesFetched < nonTechPagesLimit &&
-      totalPagesFetched < this.maxPages
-    ) {
-      const nonTechUrl = `${this.baseUrl}?limit=${this.pageSize}&offset=${nonTechOffset}&is_tech=non_tech`;
-
-      const response = await withRetry(
-        async () => {
-          const res = await fetch(nonTechUrl, {
-            headers: {
-              Accept: "application/json",
-              "User-Agent": "ResuCraft-Jobs-Sync/1.0",
-            },
-          });
-
-          if (!res.ok) {
-            const error: any = new Error(
-              `FreeHire API error HTTP ${res.status}: ${res.statusText}`,
-            );
-            error.status = res.status;
-            error.headers = res.headers;
-            throw error;
-          }
-
-          return (await res.json()) as FreeHireApiResponse;
-        },
-        {
-          maxRetries: 4,
-          initialDelayMs: 1000,
-        },
-        `FreeHire API GET is_tech=non_tech offset=${nonTechOffset}`,
-      );
-
-      if (!response || !Array.isArray(response.data)) {
-        logger.warn(
-          `FreeHire API returned non-array data at non-tech offset=${nonTechOffset}. Stopping non-tech fetch.`,
-        );
-        break;
-      }
-
-      const rawJobs = response.data;
-      nonTechPagesFetched++;
-      totalPagesFetched++;
-
-      logger.info(
-        `FreeHire Non-Tech page ${nonTechPagesFetched}: fetched ${rawJobs.length} non-tech jobs (offset=${nonTechOffset}).`,
-      );
-
-      if (rawJobs.length > 0) {
-        yield rawJobs;
-      }
-
-      nonTechOffset += rawJobs.length;
-
-      if (
-        rawJobs.length < this.pageSize ||
-        (response.meta?.total && nonTechOffset >= response.meta.total)
-      ) {
-        hasMoreNonTech = false;
-      }
-    }
-
-    logger.info(
-      `FreeHire fetch finished after ${totalPagesFetched} total pages (${techPagesFetched} tech pages, ${nonTechPagesFetched} non-tech pages).`,
+      `FreeHire fetch finished after ${techPagesFetched} tech pages (${techOffset} jobs fetched).`,
     );
   }
 

@@ -45,6 +45,9 @@ export interface PipelineStats {
   expiredRemoved: number;
   incompleteRemoved: number;
   invalidRemoved: number;
+  djinniRemoved?: number;
+  nonTechRemoved?: number;
+  nonEnglishRemoved?: number;
   totalValid: number;
 }
 

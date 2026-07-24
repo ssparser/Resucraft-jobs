@@ -14,13 +14,22 @@ export function runFilterPipeline(jobs: NormalizedJob[]): FilterPipelineResult {
   // 1. Deduplication
   const { uniqueJobs, duplicatesRemoved } = deduplicateJobs(jobs);
 
-  // 2. Validation & Filtering (Expired, Incomplete, Invalid)
-  const { validJobs, expiredRemoved, incompleteRemoved, invalidRemoved } = validateAndFilterJobs(uniqueJobs);
+  // 2. Validation & Filtering (Expired, Incomplete, Invalid, Djinni, Non-Tech, Non-English)
+  const {
+    validJobs,
+    expiredRemoved,
+    incompleteRemoved,
+    invalidRemoved,
+    djinniRemoved,
+    nonTechRemoved,
+    nonEnglishRemoved,
+  } = validateAndFilterJobs(uniqueJobs);
 
   logger.info(
     `Filter Pipeline Summary: ` +
     `Input=${totalNormalized}, Duplicates=${duplicatesRemoved}, ` +
     `Expired=${expiredRemoved}, Incomplete=${incompleteRemoved}, Invalid=${invalidRemoved}, ` +
+    `Djinni=${djinniRemoved}, NonTech=${nonTechRemoved}, NonEnglish=${nonEnglishRemoved}, ` +
     `Final Output=${validJobs.length}`
   );
 
@@ -32,6 +41,9 @@ export function runFilterPipeline(jobs: NormalizedJob[]): FilterPipelineResult {
       expiredRemoved,
       incompleteRemoved,
       invalidRemoved,
+      djinniRemoved,
+      nonTechRemoved,
+      nonEnglishRemoved,
       totalValid: validJobs.length,
     },
   };
