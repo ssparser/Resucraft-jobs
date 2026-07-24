@@ -1,7 +1,7 @@
-import { JobProvider, NormalizedJob } from '../types.js';
-import { generateDeterministicId } from '../hash.js';
-import { withRetry } from '../retry.js';
-import { logger } from '../logger.js';
+import { JobProvider, NormalizedJob } from "../types.js";
+import { generateDeterministicId } from "../hash.js";
+import { withRetry } from "../retry.js";
+import { logger } from "../logger.js";
 
 export interface FreeHireRawJob {
   public_slug: string;
@@ -40,87 +40,220 @@ export interface FreeHireApiResponse {
 }
 
 export class FreeHireProvider implements JobProvider {
-  public readonly name = 'freehire';
+  public readonly name = "freehire";
 
   private baseUrl: string;
   private pageSize: number;
   private maxPages: number;
   private maxJobs: number;
+  private roles: string[] = [
+    "Software Engineer",
+    "Software Developer",
+    "Full Stack Engineer",
+    "Backend Engineer",
+    "Frontend Engineer",
+    "AI Engineer",
+    "Machine Learning Engineer",
+    "API Engineer",
+  ];
 
-  constructor(options?: { baseUrl?: string; pageSize?: number; maxPages?: number; maxJobs?: number }) {
-    this.baseUrl = options?.baseUrl || process.env.FREEHIRE_BASE_URL || 'https://freehire.dev/api/v1/jobs';
-    this.pageSize = options?.pageSize || parseInt(process.env.FREEHIRE_PAGE_SIZE || '100', 10);
-    this.maxPages = options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || '5', 10);
-    this.maxJobs = options?.maxJobs || parseInt(process.env.FREEHIRE_MAX_JOBS || '500', 10);
+  constructor(options?: {
+    baseUrl?: string;
+    pageSize?: number;
+    maxPages?: number;
+    maxJobs?: number;
+  }) {
+    this.baseUrl =
+      options?.baseUrl ||
+      process.env.FREEHIRE_BASE_URL ||
+      "https://freehire.dev/api/v1/jobs";
+    this.pageSize =
+      options?.pageSize ||
+      parseInt(process.env.FREEHIRE_PAGE_SIZE || "100", 10);
+    this.maxPages =
+      options?.maxPages || parseInt(process.env.FREEHIRE_MAX_PAGES || "5", 10);
+    this.maxJobs =
+      options?.maxJobs || parseInt(process.env.FREEHIRE_MAX_JOBS || "500", 10);
+  }
+
+  private matchesTargetRoles(job: FreeHireRawJob): boolean {
+    if (job.is_tech === "tech") return true;
+    if (!job.title) return false;
+    const lowerTitle = job.title.toLowerCase();
+    return this.roles.some((role) => lowerTitle.includes(role.toLowerCase()));
   }
 
   public async *fetchJobs(): AsyncGenerator<FreeHireRawJob[], void, unknown> {
-    let offset = 0;
-    let pagesFetched = 0;
-    let hasMore = true;
+    logger.info(
+      `Starting FreeHire job fetch (pageSize=${this.pageSize}, maxJobs=${this.maxJobs}, maxPages=${this.maxPages})...`,
+    );
 
-    logger.info(`Starting FreeHire job fetch (pageSize=${this.pageSize}, maxJobs=${this.maxJobs}, maxPages=${this.maxPages})...`);
+    // Calculate split: allocation heavily favors tech jobs (e.g., ~80% tech, ~20% non-tech)
+    const techPagesLimit = Math.max(1, Math.ceil(this.maxPages * 0.8));
+    const nonTechPagesLimit = Math.max(1, this.maxPages - techPagesLimit);
 
-    while (hasMore && pagesFetched < this.maxPages && offset < this.maxJobs) {
-      const url = `${this.baseUrl}?limit=${this.pageSize}&offset=${offset}`;
+    let totalPagesFetched = 0;
 
-      const response = await withRetry(async () => {
-        const res = await fetch(url, {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'ResuCraft-Jobs-Sync/1.0',
-          },
-        });
+    // --- Pass 1: Fetch Tech Jobs (isTechUrl) ---
+    logger.info(`Fetching Tech jobs (limit pages: ${techPagesLimit})...`);
+    let techOffset = 0;
+    let techPagesFetched = 0;
+    let hasMoreTech = true;
 
-        if (!res.ok) {
-          const error: any = new Error(`FreeHire API error HTTP ${res.status}: ${res.statusText}`);
-          error.status = res.status;
-          error.headers = res.headers;
-          throw error;
-        }
+    while (
+      hasMoreTech &&
+      techPagesFetched < techPagesLimit &&
+      totalPagesFetched < this.maxPages
+    ) {
+      const isTechUrl = `${this.baseUrl}?limit=${this.pageSize}&offset=${techOffset}&is_tech=tech`;
 
-        return (await res.json()) as FreeHireApiResponse;
-      }, {
-        maxRetries: 4,
-        initialDelayMs: 1000,
-      }, `FreeHire API GET offset=${offset}`);
+      const response = await withRetry(
+        async () => {
+          const res = await fetch(isTechUrl, {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "ResuCraft-Jobs-Sync/1.0",
+            },
+          });
+
+          if (!res.ok) {
+            const error: any = new Error(
+              `FreeHire API error HTTP ${res.status}: ${res.statusText}`,
+            );
+            error.status = res.status;
+            error.headers = res.headers;
+            throw error;
+          }
+
+          return (await res.json()) as FreeHireApiResponse;
+        },
+        {
+          maxRetries: 4,
+          initialDelayMs: 1000,
+        },
+        `FreeHire API GET is_tech=tech offset=${techOffset}`,
+      );
 
       if (!response || !Array.isArray(response.data)) {
-        logger.warn(`FreeHire API returned non-array data at offset=${offset}. Stopping fetch.`);
+        logger.warn(
+          `FreeHire API returned non-array data at tech offset=${techOffset}. Stopping tech fetch.`,
+        );
         break;
       }
 
-      const jobs = response.data;
-      pagesFetched++;
+      const rawJobs = response.data;
+      techPagesFetched++;
+      totalPagesFetched++;
 
-      logger.info(`FreeHire page ${pagesFetched}: fetched ${jobs.length} jobs (offset=${offset}, totalAvailable=${response.meta?.total ?? 'unknown'}).`);
+      // Yield fetched tech jobs directly
+      logger.info(
+        `FreeHire Tech page ${techPagesFetched}: fetched ${rawJobs.length} tech jobs (offset=${techOffset}).`,
+      );
 
-      yield jobs;
+      if (rawJobs.length > 0) {
+        yield rawJobs;
+      }
 
-      offset += jobs.length;
+      techOffset += rawJobs.length;
 
-      // Stop condition: fewer jobs returned than requested limit, or offset >= total
-      if (jobs.length < this.pageSize) {
-        hasMore = false;
-      } else if (response.meta && response.meta.total && offset >= response.meta.total) {
-        hasMore = false;
+      if (
+        rawJobs.length < this.pageSize ||
+        (response.meta?.total && techOffset >= response.meta.total)
+      ) {
+        hasMoreTech = false;
       }
     }
 
-    logger.info(`FreeHire fetch finished after ${pagesFetched} pages.`);
+    logger.info(
+      `Fetching Non-Tech jobs (limit pages: ${nonTechPagesLimit})...`,
+    );
+    let nonTechOffset = 0;
+    let nonTechPagesFetched = 0;
+    let hasMoreNonTech = true;
+
+    while (
+      hasMoreNonTech &&
+      nonTechPagesFetched < nonTechPagesLimit &&
+      totalPagesFetched < this.maxPages
+    ) {
+      const nonTechUrl = `${this.baseUrl}?limit=${this.pageSize}&offset=${nonTechOffset}&is_tech=non_tech`;
+
+      const response = await withRetry(
+        async () => {
+          const res = await fetch(nonTechUrl, {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "ResuCraft-Jobs-Sync/1.0",
+            },
+          });
+
+          if (!res.ok) {
+            const error: any = new Error(
+              `FreeHire API error HTTP ${res.status}: ${res.statusText}`,
+            );
+            error.status = res.status;
+            error.headers = res.headers;
+            throw error;
+          }
+
+          return (await res.json()) as FreeHireApiResponse;
+        },
+        {
+          maxRetries: 4,
+          initialDelayMs: 1000,
+        },
+        `FreeHire API GET is_tech=non_tech offset=${nonTechOffset}`,
+      );
+
+      if (!response || !Array.isArray(response.data)) {
+        logger.warn(
+          `FreeHire API returned non-array data at non-tech offset=${nonTechOffset}. Stopping non-tech fetch.`,
+        );
+        break;
+      }
+
+      const rawJobs = response.data;
+      nonTechPagesFetched++;
+      totalPagesFetched++;
+
+      logger.info(
+        `FreeHire Non-Tech page ${nonTechPagesFetched}: fetched ${rawJobs.length} non-tech jobs (offset=${nonTechOffset}).`,
+      );
+
+      if (rawJobs.length > 0) {
+        yield rawJobs;
+      }
+
+      nonTechOffset += rawJobs.length;
+
+      if (
+        rawJobs.length < this.pageSize ||
+        (response.meta?.total && nonTechOffset >= response.meta.total)
+      ) {
+        hasMoreNonTech = false;
+      }
+    }
+
+    logger.info(
+      `FreeHire fetch finished after ${totalPagesFetched} total pages (${techPagesFetched} tech pages, ${nonTechPagesFetched} non-tech pages).`,
+    );
   }
 
   public normalizeJob(raw: unknown): NormalizedJob {
     const job = raw as FreeHireRawJob;
 
-    const sourceJobId = job.public_slug || job.external_id || String(Math.random());
+    const sourceJobId =
+      job.public_slug || job.external_id || String(Math.random());
     const id = generateDeterministicId(this.name, sourceJobId);
 
-    const country = Array.isArray(job.countries) && job.countries.length > 0 ? job.countries[0] : null;
+    const country =
+      Array.isArray(job.countries) && job.countries.length > 0
+        ? job.countries[0]
+        : null;
 
     const isRemote = Boolean(
-      (job.regions && job.regions.includes('remote')) ||
-      (job.location && /remote/i.test(job.location))
+      (job.regions && job.regions.includes("remote")) ||
+      (job.location && /remote/i.test(job.location)),
     );
 
     const tagsSet = new Set<string>();
@@ -139,20 +272,24 @@ export class FreeHireProvider implements JobProvider {
       source: this.name,
       sourceJobId,
       slug: job.public_slug || sourceJobId,
-      title: job.title ? job.title.trim() : '',
-      company: job.company ? job.company.trim() : '',
+      title: job.title ? job.title.trim() : "",
+      company: job.company ? job.company.trim() : "",
       location: job.location ? job.location.trim() : null,
       country,
       remote: isRemote,
       visaSponsored: false,
       employmentType: job.enrichment?.employment_type || null,
       salary: null,
-      description: job.description || '',
-      applyUrl: job.url || '',
-      companyUrl: job.company_slug ? `https://freehire.dev/company/${job.company_slug}` : null,
+      description: job.description || "",
+      applyUrl: job.url || "",
+      companyUrl: job.company_slug
+        ? `https://freehire.dev/company/${job.company_slug}`
+        : null,
       postedAt: job.posted_at || job.created_at || null,
       expiresAt: job.closed_at || null,
-      skills: Array.isArray(job.skills) ? job.skills.map((s) => s.trim().toLowerCase()) : [],
+      skills: Array.isArray(job.skills)
+        ? job.skills.map((s) => s.trim().toLowerCase())
+        : [],
       tags: Array.from(tagsSet),
     };
   }
