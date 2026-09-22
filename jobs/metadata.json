@@ -1,24 +1,24 @@
 {
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-09-22T03:49:26.268Z",
-  "totalJobs": 853,
+  "generatedAt": "2026-09-22T11:08:46.791Z",
+  "totalJobs": 890,
   "providerStats": {
     "freehire": {
       "providerName": "freehire",
       "totalFetched": 1500,
       "totalNormalized": 1500,
-      "duplicatesRemoved": 5,
+      "duplicatesRemoved": 2,
       "expiredRemoved": 0,
-      "incompleteRemoved": 192,
+      "incompleteRemoved": 115,
       "invalidRemoved": 0,
-      "djinniRemoved": 0,
-      "nonTechRemoved": 414,
-      "nonEnglishRemoved": 36,
-      "totalValid": 853
+      "djinniRemoved": 20,
+      "nonTechRemoved": 200,
+      "nonEnglishRemoved": 273,
+      "totalValid": 890
     }
   },
   "datasetFilename": "latest.json",
-  "datasetHash": "e5d256ded171d3031fbaed8a3ec20a7991b97eb0e41236d4f4c1e984d24a88e0",
-  "datasetSizeBytes": 5265698,
-  "overallVersion": "36b25ae8ebe00d15109571ad02adc629661ac95307712f110fe4c4a4236732b4"
+  "datasetHash": "19d14f18b1b9d646749423e92a0d00a58e6e36c3bc814bb5eaca431ee9a761af",
+  "datasetSizeBytes": 3464130,
+  "overallVersion": "623f4bccf6e7411d4a9a8c74cd09760dd4b9d946ed58d4cb2af507fdcf4cb95f"
 }
